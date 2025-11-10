@@ -74,6 +74,16 @@ def main():
     print("  • Advanced Analytics & Insights")
     print("  • Real-Time Trend Analysis")
     print("  • Project Management & Workflows")
+
+    # Check if API keys are configured
+    api_key = config.get_secret('openai_api_key')
+    if not api_key:
+        print("\n" + "⚠" * 40)
+        print("  NOTE: AI features require API key configuration")
+        print("  Go to Settings tab to add your OpenAI API key")
+        print("  You can still explore the app and use non-AI features!")
+        print("⚠" * 40)
+
     print("\nLaunching application...")
     print("=" * 80 + "\n")
 

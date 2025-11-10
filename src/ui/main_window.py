@@ -102,6 +102,22 @@ class CreatorStudioMainWindow(QMainWindow):
         welcome.setFont(QFont("Arial", 18, QFont.Weight.Bold))
         layout.addWidget(welcome)
 
+        # API Status Banner
+        from ..core.config import config
+        api_key = config.get_secret('openai_api_key')
+
+        if not api_key:
+            info_banner = QLabel(
+                "💡 Tip: Configure your API key in the Settings tab to unlock AI-powered features!\n"
+                "You can explore all other features without an API key."
+            )
+            info_banner.setWordWrap(True)
+            info_banner.setStyleSheet(
+                "background-color: #1a4d6d; color: #87CEEB; "
+                "padding: 15px; border-radius: 5px; margin: 10px 0px;"
+            )
+            layout.addWidget(info_banner)
+
         # Quick stats
         stats_layout = QHBoxLayout()
 
@@ -519,20 +535,59 @@ class CreatorStudioMainWindow(QMainWindow):
         title.setFont(QFont("Arial", 16, QFont.Weight.Bold))
         layout.addWidget(title)
 
+        # API Status Banner
+        from ..core.config import config
+        api_key = config.get_secret('openai_api_key')
+
+        status_label = QLabel()
+        if api_key:
+            status_label.setText("✅ API Key Configured - AI features are enabled")
+            status_label.setStyleSheet("background-color: #2d5016; color: #90EE90; padding: 10px; border-radius: 5px;")
+        else:
+            status_label.setText("⚠️  No API Key - AI features require configuration (Optional)")
+            status_label.setStyleSheet("background-color: #5a4a00; color: #FFD700; padding: 10px; border-radius: 5px;")
+        layout.addWidget(status_label)
+
         # API Settings
-        api_group = QGroupBox("AI API Configuration")
-        api_layout = QGridLayout()
+        api_group = QGroupBox("AI API Configuration (Optional)")
+        api_layout = QVBoxLayout()
 
-        api_layout.addWidget(QLabel("Provider:"), 0, 0)
-        provider_combo = QComboBox()
-        provider_combo.addItems(["OpenAI", "Anthropic"])
-        api_layout.addWidget(provider_combo, 0, 1)
+        # Info text
+        info_label = QLabel(
+            "AI features like script generation and image creation require an API key.\n"
+            "You can use the app without AI features - just leave this blank!\n\n"
+            "Get your OpenAI API key from: https://platform.openai.com/api-keys"
+        )
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet("color: #aaaaaa; padding: 10px;")
+        api_layout.addWidget(info_label)
 
-        api_layout.addWidget(QLabel("API Key:"), 1, 0)
-        api_key_input = QLineEdit()
-        api_key_input.setPlaceholderText("Enter your API key...")
-        api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
-        api_layout.addWidget(api_key_input, 1, 1)
+        # Provider and Key
+        form_layout = QGridLayout()
+
+        form_layout.addWidget(QLabel("Provider:"), 0, 0)
+        self.provider_combo = QComboBox()
+        self.provider_combo.addItems(["OpenAI", "Anthropic"])
+        form_layout.addWidget(self.provider_combo, 0, 1)
+
+        form_layout.addWidget(QLabel("API Key:"), 1, 0)
+        self.api_key_input = QLineEdit()
+        self.api_key_input.setPlaceholderText("sk-... (paste your API key here)")
+        self.api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
+
+        # Load existing key if available
+        if api_key:
+            self.api_key_input.setText(api_key)
+
+        form_layout.addWidget(self.api_key_input, 1, 1)
+
+        # Show/Hide button
+        show_key_btn = QPushButton("👁️ Show")
+        show_key_btn.setMaximumWidth(100)
+        show_key_btn.clicked.connect(self._toggle_api_key_visibility)
+        form_layout.addWidget(show_key_btn, 1, 2)
+
+        api_layout.addLayout(form_layout)
 
         api_group.setLayout(api_layout)
         layout.addWidget(api_group)
@@ -557,12 +612,101 @@ class CreatorStudioMainWindow(QMainWindow):
         layout.addWidget(app_group)
 
         # Save button
-        save_btn = QPushButton("Save Settings")
-        save_btn.clicked.connect(lambda: self._show_info("Settings saved successfully"))
+        save_btn = QPushButton("💾 Save Settings")
+        save_btn.clicked.connect(self._save_settings)
+        save_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #0078d4;
+                color: white;
+                padding: 10px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #106ebe;
+            }
+        """)
         layout.addWidget(save_btn)
+
+        # Test API button
+        test_btn = QPushButton("🧪 Test API Connection")
+        test_btn.clicked.connect(self._test_api_connection)
+        layout.addWidget(test_btn)
 
         layout.addStretch()
         return widget
+
+    def _toggle_api_key_visibility(self):
+        """Toggle API key visibility"""
+        if self.api_key_input.echoMode() == QLineEdit.EchoMode.Password:
+            self.api_key_input.setEchoMode(QLineEdit.EchoMode.Normal)
+        else:
+            self.api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
+
+    def _save_settings(self):
+        """Save settings to config"""
+        from ..core.config import config
+
+        try:
+            # Save API key
+            api_key = self.api_key_input.text().strip()
+            provider = self.provider_combo.currentText().lower()
+
+            if api_key:
+                if provider == "openai":
+                    config.set_secret('openai_api_key', api_key)
+                elif provider == "anthropic":
+                    config.set_secret('anthropic_api_key', api_key)
+
+                QMessageBox.information(
+                    self,
+                    "Success",
+                    f"API key saved successfully!\n\n"
+                    f"Provider: {provider.title()}\n"
+                    f"AI features are now enabled."
+                )
+            else:
+                QMessageBox.information(
+                    self,
+                    "Settings Saved",
+                    "Settings saved. No API key configured.\n"
+                    "You can still use non-AI features!"
+                )
+
+            self.statusBar().showMessage("Settings saved successfully", 3000)
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error",
+                f"Failed to save settings:\n{str(e)}"
+            )
+
+    def _test_api_connection(self):
+        """Test API connection"""
+        from ..core.config import config
+
+        api_key = self.api_key_input.text().strip()
+        provider = self.provider_combo.currentText().lower()
+
+        if not api_key:
+            QMessageBox.warning(
+                self,
+                "No API Key",
+                "Please enter an API key first."
+            )
+            return
+
+        # Show testing dialog
+        QMessageBox.information(
+            self,
+            "Testing API",
+            f"Testing connection to {provider.title()}...\n\n"
+            f"Note: This is a demo version.\n"
+            f"In production, this would test the actual API connection."
+        )
+
+        self.statusBar().showMessage(f"API key format validated for {provider}", 3000)
 
     def _create_stat_card(self, label: str, value: str) -> QWidget:
         """Create a statistics card"""

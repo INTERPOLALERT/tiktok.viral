@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Fund.tires - GoFundMe × Pump.tires Hybrid on PulseChain{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav-container">
+            <a href="{{ url_for('index') }}" class="logo">
+                <span class="logo-icon">🔥</span>
+                <span>FUND.TIRES</span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('discover') }}">Discover</a></li>
+                <li><a href="{{ url_for('leaderboard') }}">Leaderboard</a></li>
+                <li><a href="{{ url_for('burn_stats_page') }}">Burns</a></li>
+                {% if user %}
+                <li><a href="{{ url_for('create_campaign_page') }}" class="btn btn-primary">Create Campaign</a></li>
+                <li>
+                    <div class="wallet-address" onclick="window.location.href='{{ url_for('profile', wallet_address=user.wallet_address) }}'">
+                        {{ user.display_address() }}
+                    </div>
+                </li>
+                <li>
+                    <button class="btn-wallet" onclick="disconnectWallet()">Disconnect</button>
+                </li>
+                {% else %}
+                <li>
+                    <button class="btn-wallet" onclick="connectWallet()">Connect Wallet</button>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer style="background: var(--bg-secondary); padding: 3rem 2rem; text-align: center; margin-top: 4rem;">
+        <div class="container">
+            <h3 class="text-gradient-rainbow" style="font-size: 2rem; margin-bottom: 1rem;">FUND.TIRES</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                The world's first GoFundMe × Pump.tires hybrid on PulseChain
+            </p>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">
+                Every campaign burns PLS. Every contribution burns PLS. Pure deflationary impact.
+            </p>
+            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+                <p style="color: var(--text-muted); font-size: 0.85rem;">
+                    PLS: 0x0000000000000000000000000000000000000000 |
+                    WPLS: 0xA1077a294dDE1B09bB078844df40758a5D0f9a27
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Wallet Connection
+        function connectWallet() {
+            // In production, this would use Web3/MetaMask
+            // For demo, generate random wallet
+            fetch('/connect_wallet', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                }
+            });
+        }
+
+        function disconnectWallet() {
+            fetch('/disconnect_wallet', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                }
+            });
+        }
+
+        // Format numbers
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(2) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(2) + 'K';
+            }
+            return num.toFixed(2);
+        }
+
+        // Format PLS
+        function formatPLS(amount) {
+            return formatNumber(amount) + ' PLS';
+        }
+
+        // Format USD
+        function formatUSD(amount) {
+            return '$' + formatNumber(amount);
+        }
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

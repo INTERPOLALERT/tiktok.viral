@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Top Contributors - Fund.tires{% endblock %}
+
+{% block content %}
+<div class="leaderboard-container">
+    <h1 class="text-gradient-rainbow" style="font-size: 3rem; text-align: center; margin-bottom: 1rem;">Top Contributors</h1>
+    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 3rem;">
+        Ranked by total PLS contributed + 20% burn bonus + 10% frequency bonus
+    </p>
+
+    <!-- Time Period Selector -->
+    <div style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 3rem;">
+        <a href="{{ url_for('leaderboard', period='all_time') }}" class="btn {% if time_period == 'all_time' %}btn-primary{% else %}btn-outline{% endif %}">
+            All Time
+        </a>
+        <a href="{{ url_for('leaderboard', period='this_month') }}" class="btn {% if time_period == 'this_month' %}btn-primary{% else %}btn-outline{% endif %}">
+            This Month
+        </a>
+        <a href="{{ url_for('leaderboard', period='this_week') }}" class="btn {% if time_period == 'this_week' %}btn-primary{% else %}btn-outline{% endif %}">
+            This Week
+        </a>
+        <a href="{{ url_for('leaderboard', period='today') }}" class="btn {% if time_period == 'today' %}btn-primary{% else %}btn-outline{% endif %}">
+            Today
+        </a>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="glass-strong" style="padding: 2rem;">
+        <table class="leaderboard-table">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary);">
+                    <th style="padding: 1rem; text-align: left;">Rank</th>
+                    <th style="padding: 1rem; text-align: left;">Address</th>
+                    <th style="padding: 1rem; text-align: right;">Contributed</th>
+                    <th style="padding: 1rem; text-align: right;">Burned</th>
+                    <th style="padding: 1rem; text-align: right;">Campaigns</th>
+                    <th style="padding: 1rem; text-align: right;">Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in top_contributors %}
+                <tr class="leaderboard-row" onclick="window.location.href='{{ url_for('profile', wallet_address=item['user'].wallet_address) }}'">
+                    <td style="padding: 1.5rem;">
+                        <div class="rank-badge rank-{% if item['rank'] <= 3 %}{{ item['rank'] }}{% else %}other{% endif %}">
+                            {% if item['rank'] == 1 %}👑
+                            {% elif item['rank'] == 2 %}🥈
+                            {% elif item['rank'] == 3 %}🥉
+                            {% else %}{{ item['rank'] }}{% endif %}
+                        </div>
+                    </td>
+                    <td style="padding: 1.5rem;">
+                        <div class="address-mono">{{ item['user'].display_address() }}</div>
+                    </td>
+                    <td style="padding: 1.5rem; text-align: right;">
+                        <strong>{{ "%.2f"|format(item['user'].total_contributed) }}</strong> PLS
+                    </td>
+                    <td style="padding: 1.5rem; text-align: right;">
+                        <strong style="color: #ff6600;">{{ "%.2f"|format(item['user'].total_burned) }}</strong> PLS 🔥
+                    </td>
+                    <td style="padding: 1.5rem; text-align: right;">
+                        {{ item['user'].campaigns_supported }}
+                    </td>
+                    <td style="padding: 1.5rem; text-align: right;">
+                        <strong>{{ "%.2f"|format(item['score']) }}</strong>
+                    </td>
+                </tr>
+                {% endfor %}
+
+                {% if not top_contributors %}
+                <tr>
+                    <td colspan="6" style="padding: 3rem; text-align: center; color: var(--text-secondary);">
+                        No contributors yet. Be the first!
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- PLS Price Display -->
+    <div style="text-align: center; margin-top: 2rem; color: var(--text-secondary);">
+        Current PLS Price: <strong style="color: var(--neon-glow);">${{ "%.6f"|format(pls_price) }}</strong>
+    </div>
+</div>
+{% endblock %}

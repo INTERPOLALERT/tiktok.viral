@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile_user.display_address() }} - Fund.tires{% endblock %}
+
+{% block content %}
+<div class="container" style="margin: 3rem auto;">
+    <!-- Profile Header -->
+    <div class="glass-strong" style="padding: 3rem; text-align: center; margin-bottom: 3rem;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">👤</div>
+        <h1 class="address-mono" style="font-size: 2rem; margin-bottom: 1rem;">{{ profile_user.wallet_address }}</h1>
+        {% if user_rank %}
+        <div style="margin-bottom: 1rem;">
+            <span class="achievement-badge achievement-platinum">Rank #{{ user_rank }}</span>
+        </div>
+        {% endif %}
+
+        <!-- Stats Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; margin-top: 2rem;">
+            <div>
+                <div style="font-size: 2rem; font-weight: 700; color: var(--neon-glow);">{{ "%.2f"|format(profile_user.total_contributed) }}</div>
+                <div style="color: var(--text-secondary);">Total PLS Contributed</div>
+            </div>
+            <div>
+                <div style="font-size: 2rem; font-weight: 700; color: #ff6600;">{{ "%.2f"|format(profile_user.total_burned) }}</div>
+                <div style="color: var(--text-secondary);">Total PLS Burned 🔥</div>
+            </div>
+            <div>
+                <div style="font-size: 2rem; font-weight: 700;">{{ profile_user.campaigns_supported }}</div>
+                <div style="color: var(--text-secondary);">Campaigns Supported</div>
+            </div>
+            <div>
+                <div style="font-size: 2rem; font-weight: 700;">{{ profile_user.campaigns_created }}</div>
+                <div style="color: var(--text-secondary);">Campaigns Created</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Achievements -->
+    {% if achievements %}
+    <div class="glass-strong" style="padding: 2rem; margin-bottom: 3rem;">
+        <h2 style="margin-bottom: 1.5rem;">🏆 Achievements</h2>
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+            {% for achievement in achievements %}
+            <div class="achievement-badge achievement-{{ achievement.badge_tier }}">
+                {{ achievement.achievement_name }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Created Campaigns -->
+    {% if created_campaigns %}
+    <div style="margin-bottom: 3rem;">
+        <h2 style="margin-bottom: 1.5rem;">📊 Created Campaigns</h2>
+        <div class="campaigns-grid">
+            {% for campaign in created_campaigns %}
+            <div class="campaign-card">
+                <div class="campaign-image">
+                    {% if campaign.image_url %}
+                    <img src="{{ campaign.image_url }}" alt="{{ campaign.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                    🎯
+                    {% endif %}
+                </div>
+                <div class="campaign-content">
+                    <div class="campaign-category">{{ campaign.category }}</div>
+                    <h3 class="campaign-title">{{ campaign.title }}</h3>
+
+                    <div class="campaign-stats">
+                        <span>{{ "%.0f"|format(campaign.progress_percentage()) }}% funded</span>
+                        <span>{{ campaign.days_remaining() }} days left</span>
+                    </div>
+
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ campaign.progress_percentage() }}%"></div>
+                    </div>
+
+                    <div class="campaign-footer">
+                        <div>
+                            <strong>{{ "%.0f"|format(campaign.total_raised_pls) }}</strong> PLS<br>
+                            <small style="color: var(--text-secondary);">Goal: {{ "%.0f"|format(campaign.goal_pls) }} PLS</small>
+                        </div>
+                        <a href="{{ url_for('view_campaign', campaign_id=campaign.campaign_id) }}" class="btn btn-secondary">
+                            View
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Contribution History -->
+    {% if contributions %}
+    <div class="glass-strong" style="padding: 2rem;">
+        <h2 style="margin-bottom: 1.5rem;">💸 Contribution History</h2>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary);">
+                        <th style="padding: 1rem; text-align: left;">Date</th>
+                        <th style="padding: 1rem; text-align: left;">Campaign</th>
+                        <th style="padding: 1rem; text-align: right;">Amount</th>
+                        <th style="padding: 1rem; text-align: right;">Burned</th>
+                        <th style="padding: 1rem; text-align: left;">Transaction</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contrib in contributions %}
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 1rem;">{{ contrib.created_at.strftime('%b %d, %Y') }}</td>
+                        <td style="padding: 1rem;">
+                            <a href="{{ url_for('view_campaign', campaign_id=contrib.campaign.campaign_id) }}" style="color: var(--neon-glow);">
+                                {{ contrib.campaign.title[:50] }}...
+                            </a>
+                        </td>
+                        <td style="padding: 1rem; text-align: right;"><strong>{{ "%.2f"|format(contrib.amount_pls) }}</strong> PLS</td>
+                        <td style="padding: 1rem; text-align: right; color: #ff6600;"><strong>{{ "%.2f"|format(contrib.burned_pls) }}</strong> PLS 🔥</td>
+                        <td style="padding: 1rem; font-family: 'Courier New', monospace; font-size: 0.8rem;">{{ contrib.transaction_hash[:10] }}...</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

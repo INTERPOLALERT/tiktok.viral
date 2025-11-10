@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-content">
+        <h1>Create. Support. Burn. Impact.</h1>
+        <p>Launch your fundraiser in 30 seconds on PulseChain network. Every contribution burns PLS. GoFundMe's trust meets Pump.tires' discovery.</p>
+
+        {% if not user %}
+        <button class="btn btn-primary" onclick="connectWallet()" style="padding: 1rem 2rem; font-size: 1.1rem;">
+            Connect Wallet to Start
+        </button>
+        {% else %}
+        <a href="{{ url_for('create_campaign_page') }}" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem;">
+            Create Campaign in 30 Seconds
+        </a>
+        {% endif %}
+
+        <div class="hero-stats">
+            <div class="stat-item">
+                <span class="stat-value">{{ "%.2f"|format(total_burned) }} PLS</span>
+                <span class="stat-label">Total Burned</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">${{ "%.6f"|format(pls_price) }}</span>
+                <span class="stat-label">PLS Price</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">{{ trending_campaigns|length + new_campaigns|length }}</span>
+                <span class="stat-label">Active Campaigns</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Trending Campaigns -->
+<section class="campaigns-section">
+    <div class="section-header">
+        <h2 class="section-title">🔥 Trending</h2>
+        <a href="{{ url_for('discover', sort='trending') }}" class="btn btn-outline">View All</a>
+    </div>
+
+    <div class="campaigns-grid">
+        {% for campaign in trending_campaigns[:6] %}
+        <div class="campaign-card">
+            <div class="campaign-image">
+                {% if campaign.image_url %}
+                <img src="{{ campaign.image_url }}" alt="{{ campaign.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                🎯
+                {% endif %}
+                <div class="campaign-badge">{{ "%.0f"|format(campaign.contribution_velocity) }} PLS/hr</div>
+            </div>
+            <div class="campaign-content">
+                <div class="campaign-category">{{ campaign.category }}</div>
+                <h3 class="campaign-title">{{ campaign.title }}</h3>
+
+                <div class="campaign-stats">
+                    <span>{{ "%.0f"|format(campaign.progress_percentage()) }}% funded</span>
+                    <span>{{ campaign.days_remaining() }} days left</span>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ campaign.progress_percentage() }}%"></div>
+                </div>
+
+                <div class="campaign-footer">
+                    <div>
+                        <strong>{{ "%.0f"|format(campaign.total_raised_pls) }}</strong> PLS raised<br>
+                        <small style="color: var(--text-secondary);">Goal: {{ "%.0f"|format(campaign.goal_pls) }} PLS</small>
+                    </div>
+                    <a href="{{ url_for('view_campaign', campaign_id=campaign.campaign_id) }}" class="btn btn-secondary">
+                        View
+                    </a>
+                </div>
+
+                <div class="burn-badge" style="margin-top: 1rem;">
+                    🔥 {{ "%.2f"|format(campaign.total_burned_pls) }} PLS burned
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- New Campaigns -->
+<section class="campaigns-section">
+    <div class="section-header">
+        <h2 class="section-title">✨ New</h2>
+        <a href="{{ url_for('discover', sort='new') }}" class="btn btn-outline">View All</a>
+    </div>
+
+    <div class="campaigns-grid">
+        {% for campaign in new_campaigns[:6] %}
+        <div class="campaign-card">
+            <div class="campaign-image">
+                {% if campaign.image_url %}
+                <img src="{{ campaign.image_url }}" alt="{{ campaign.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                🚀
+                {% endif %}
+            </div>
+            <div class="campaign-content">
+                <div class="campaign-category">{{ campaign.category }}</div>
+                <h3 class="campaign-title">{{ campaign.title }}</h3>
+
+                <div class="campaign-stats">
+                    <span>{{ "%.0f"|format(campaign.progress_percentage()) }}% funded</span>
+                    <span>{{ campaign.days_remaining() }} days left</span>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ campaign.progress_percentage() }}%"></div>
+                </div>
+
+                <div class="campaign-footer">
+                    <div>
+                        <strong>{{ "%.0f"|format(campaign.total_raised_pls) }}</strong> PLS raised<br>
+                        <small style="color: var(--text-secondary);">Goal: {{ "%.0f"|format(campaign.goal_pls) }} PLS</small>
+                    </div>
+                    <a href="{{ url_for('view_campaign', campaign_id=campaign.campaign_id) }}" class="btn btn-secondary">
+                        View
+                    </a>
+                </div>
+
+                <div class="burn-badge" style="margin-top: 1rem;">
+                    🔥 {{ "%.2f"|format(campaign.total_burned_pls) }} PLS burned
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Ending Soon -->
+{% if ending_soon_campaigns %}
+<section class="campaigns-section">
+    <div class="section-header">
+        <h2 class="section-title">⏰ Ending Soon</h2>
+        <a href="{{ url_for('discover', sort='ending') }}" class="btn btn-outline">View All</a>
+    </div>
+
+    <div class="campaigns-grid">
+        {% for campaign in ending_soon_campaigns[:6] %}
+        <div class="campaign-card">
+            <div class="campaign-image">
+                {% if campaign.image_url %}
+                <img src="{{ campaign.image_url }}" alt="{{ campaign.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                ⏰
+                {% endif %}
+                <div class="campaign-badge" style="background: var(--gradient-fire);">{{ campaign.days_remaining() }}d left</div>
+            </div>
+            <div class="campaign-content">
+                <div class="campaign-category">{{ campaign.category }}</div>
+                <h3 class="campaign-title">{{ campaign.title }}</h3>
+
+                <div class="campaign-stats">
+                    <span>{{ "%.0f"|format(campaign.progress_percentage()) }}% funded</span>
+                    <span>{{ campaign.supporter_count }} supporters</span>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ campaign.progress_percentage() }}%"></div>
+                </div>
+
+                <div class="campaign-footer">
+                    <div>
+                        <strong>{{ "%.0f"|format(campaign.total_raised_pls) }}</strong> PLS raised<br>
+                        <small style="color: var(--text-secondary);">Goal: {{ "%.0f"|format(campaign.goal_pls) }} PLS</small>
+                    </div>
+                    <a href="{{ url_for('view_campaign', campaign_id=campaign.campaign_id) }}" class="btn btn-secondary">
+                        View
+                    </a>
+                </div>
+
+                <div class="burn-badge" style="margin-top: 1rem;">
+                    🔥 {{ "%.2f"|format(campaign.total_burned_pls) }} PLS burned
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Live Activity Feed -->
+<section class="campaigns-section">
+    <div class="section-header">
+        <h2 class="section-title">⚡ Live Activity</h2>
+    </div>
+
+    <div class="glass" style="padding: 2rem; max-width: 800px; margin: 0 auto;">
+        <div id="activity-feed">
+            <p style="text-align: center; color: var(--text-secondary);">Loading activity...</p>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Load activity feed
+    function loadActivityFeed() {
+        fetch('/api/activity_feed?limit=10')
+            .then(response => response.json())
+            .then(data => {
+                const feed = document.getElementById('activity-feed');
+                if (data.activities && data.activities.length > 0) {
+                    feed.innerHTML = data.activities.map(activity => `
+                        <div style="padding: 1rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="color: var(--neon-glow); font-family: 'Courier New', monospace;">${activity.contributor_address}</span>
+                                contributed
+                                <strong style="color: var(--text-primary);">${activity.amount_pls.toFixed(2)} PLS</strong>
+                                to <a href="/campaign/${activity.campaign_id}" style="color: var(--neon-glow);">${activity.campaign_title}</a>
+                            </div>
+                            <div class="burn-badge">
+                                🔥 ${activity.burned_pls.toFixed(2)} PLS
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    feed.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No recent activity</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading activity:', error);
+            });
+    }
+
+    // Load on page load
+    loadActivityFeed();
+
+    // Refresh every 10 seconds
+    setInterval(loadActivityFeed, 10000);
+</script>
+{% endblock %}

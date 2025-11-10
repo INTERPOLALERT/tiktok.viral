@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Discover Campaigns - Fund.tires{% endblock %}
+
+{% block content %}
+<div class="container" style="margin: 3rem auto;">
+    <h1 class="text-gradient-rainbow" style="font-size: 3rem; text-align: center; margin-bottom: 2rem;">Discover Campaigns</h1>
+
+    <!-- Filters -->
+    <div class="glass" style="padding: 2rem; margin-bottom: 3rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+            <!-- Search -->
+            <div>
+                <label class="form-label">Search</label>
+                <input type="text" class="form-input" id="search" value="{{ search_query }}" placeholder="Search campaigns...">
+            </div>
+
+            <!-- Category -->
+            <div>
+                <label class="form-label">Category</label>
+                <select class="form-select" id="category" onchange="updateFilters()">
+                    <option value="all" {% if category == 'all' %}selected{% endif %}>All Categories</option>
+                    <option value="personal" {% if category == 'personal' %}selected{% endif %}>Personal</option>
+                    <option value="business" {% if category == 'business' %}selected{% endif %}>Business</option>
+                    <option value="charity" {% if category == 'charity' %}selected{% endif %}>Charity</option>
+                    <option value="emergency" {% if category == 'emergency' %}selected{% endif %}>Emergency</option>
+                    <option value="creative" {% if category == 'creative' %}selected{% endif %}>Creative</option>
+                    <option value="education" {% if category == 'education' %}selected{% endif %}>Education</option>
+                    <option value="medical" {% if category == 'medical' %}selected{% endif %}>Medical</option>
+                    <option value="community" {% if category == 'community' %}selected{% endif %}>Community</option>
+                    <option value="technology" {% if category == 'technology' %}selected{% endif %}>Technology</option>
+                    <option value="environment" {% if category == 'environment' %}selected{% endif %}>Environment</option>
+                    <option value="animal" {% if category == 'animal' %}selected{% endif %}>Animal</option>
+                    <option value="other" {% if category == 'other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+
+            <!-- Sort -->
+            <div>
+                <label class="form-label">Sort By</label>
+                <select class="form-select" id="sort" onchange="updateFilters()">
+                    <option value="trending" {% if sort_by == 'trending' %}selected{% endif %}>🔥 Trending</option>
+                    <option value="new" {% if sort_by == 'new' %}selected{% endif %}>✨ New</option>
+                    <option value="ending" {% if sort_by == 'ending' %}selected{% endif %}>⏰ Ending Soon</option>
+                    <option value="popular" {% if sort_by == 'popular' %}selected{% endif %}>👥 Most Popular</option>
+                </select>
+            </div>
+
+            <!-- Search Button -->
+            <div style="display: flex; align-items: flex-end;">
+                <button class="btn btn-primary" onclick="searchCampaigns()" style="width: 100%;">
+                    Search
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div style="margin-bottom: 2rem;">
+        <h3 style="color: var(--text-secondary);">{{ campaigns|length }} campaigns found</h3>
+    </div>
+
+    <div class="campaigns-grid">
+        {% for campaign in campaigns %}
+        <div class="campaign-card">
+            <div class="campaign-image">
+                {% if campaign.image_url %}
+                <img src="{{ campaign.image_url }}" alt="{{ campaign.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                🎯
+                {% endif %}
+                {% if sort_by == 'trending' %}
+                <div class="campaign-badge">{{ "%.0f"|format(campaign.contribution_velocity) }} PLS/hr</div>
+                {% elif sort_by == 'ending' %}
+                <div class="campaign-badge" style="background: var(--gradient-fire);">{{ campaign.days_remaining() }}d left</div>
+                {% endif %}
+            </div>
+            <div class="campaign-content">
+                <div class="campaign-category">{{ campaign.category }}</div>
+                <h3 class="campaign-title">{{ campaign.title }}</h3>
+
+                <div class="campaign-stats">
+                    <span>{{ "%.0f"|format(campaign.progress_percentage()) }}% funded</span>
+                    <span>{{ campaign.days_remaining() }} days left</span>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ campaign.progress_percentage() }}%"></div>
+                </div>
+
+                <div class="campaign-footer">
+                    <div>
+                        <strong>{{ "%.0f"|format(campaign.total_raised_pls) }}</strong> PLS raised<br>
+                        <small style="color: var(--text-secondary);">Goal: {{ "%.0f"|format(campaign.goal_pls) }} PLS</small>
+                    </div>
+                    <a href="{{ url_for('view_campaign', campaign_id=campaign.campaign_id) }}" class="btn btn-secondary">
+                        View
+                    </a>
+                </div>
+
+                <div class="burn-badge" style="margin-top: 1rem;">
+                    🔥 {{ "%.2f"|format(campaign.total_burned_pls) }} PLS burned
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if not campaigns %}
+        <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 0; color: var(--text-secondary);">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">🔍</div>
+            <h3>No campaigns found</h3>
+            <p>Try adjusting your filters or search terms</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function updateFilters() {
+        const category = document.getElementById('category').value;
+        const sort = document.getElementById('sort').value;
+        const search = document.getElementById('search').value;
+
+        let url = '/discover?';
+        if (category !== 'all') url += `category=${category}&`;
+        if (sort) url += `sort=${sort}&`;
+        if (search) url += `q=${encodeURIComponent(search)}&`;
+
+        window.location.href = url;
+    }
+
+    function searchCampaigns() {
+        updateFilters();
+    }
+
+    // Enter key on search
+    document.getElementById('search').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchCampaigns();
+        }
+    });
+</script>
+{% endblock %}

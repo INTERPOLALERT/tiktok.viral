@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}{{ campaign.title }} - Fund.tires{% endblock %}
+
+{% block content %}
+<div class="container" style="margin: 3rem auto;">
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+        <!-- Main Content -->
+        <div>
+            <!-- Campaign Header -->
+            <div class="glass-strong" style="padding: 2rem; margin-bottom: 2rem;">
+                <div style="margin-bottom: 1rem;">
+                    <span class="campaign-category">{{ campaign.category }}</span>
+                    {% if campaign.is_verified %}
+                    <span class="achievement-badge achievement-gold" style="margin-left: 0.5rem;">✓ Verified</span>
+                    {% endif %}
+                </div>
+
+                <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">{{ campaign.title }}</h1>
+
+                <div style="display: flex; gap: 2rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                    <span>Created by: <a href="{{ url_for('profile', wallet_address=creator.wallet_address) }}" class="address-mono">{{ creator.display_address() }}</a></span>
+                    <span>{{ campaign.supporter_count }} supporters</span>
+                    <span>{{ campaign.contribution_velocity|round(2) }} PLS/hr</span>
+                </div>
+
+                <!-- Campaign Image/Video -->
+                {% if campaign.image_url %}
+                <div style="margin: 2rem 0;">
+                    <img src="{{ campaign.image_url }}" alt="{{ campaign.title }}" style="width: 100%; border-radius: 12px;">
+                </div>
+                {% endif %}
+
+                {% if campaign.video_url %}
+                <div style="margin: 2rem 0;">
+                    <iframe src="{{ campaign.video_url }}" style="width: 100%; height: 400px; border-radius: 12px; border: none;"></iframe>
+                </div>
+                {% endif %}
+
+                <!-- Description -->
+                <div style="margin-top: 2rem; line-height: 1.8;">
+                    <h3 style="margin-bottom: 1rem;">Campaign Story</h3>
+                    <p style="white-space: pre-wrap; color: var(--text-secondary);">{{ campaign.description or 'No description provided.' }}</p>
+                </div>
+            </div>
+
+            <!-- Milestones -->
+            <div class="glass-strong" style="padding: 2rem; margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1.5rem;">📊 Staged Funding Milestones</h3>
+                <div>
+                    {% for milestone in milestones %}
+                    <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 1rem; {% if milestone.is_verified %}border: 2px solid #00ff00;{% endif %}">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>Stage {{ milestone.stage_number }}: {{ milestone.title }}</strong><br>
+                                <small style="color: var(--text-secondary);">Goal: {{ milestone.required_amount_pls|round(2) }} PLS</small>
+                            </div>
+                            <div>
+                                {% if milestone.is_verified %}
+                                <span class="achievement-badge achievement-gold">✓ Verified</span>
+                                {% elif milestone.is_completed %}
+                                <span class="achievement-badge achievement-silver">⏳ Pending Verification</span>
+                                {% else %}
+                                <span class="achievement-badge achievement-bronze">Pending</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if milestone.description %}
+                        <p style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">{{ milestone.description }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div style="margin-top: 1rem; padding: 1rem; background: var(--gradient-deep-purple); border-radius: 8px;">
+                    <small>🔒 Creator deposited {{ campaign.total_creator_deposit|round(2) }} PLS as security. Deposits are returned as milestones are verified.</small>
+                </div>
+            </div>
+
+            <!-- Updates -->
+            <div class="glass-strong" style="padding: 2rem; margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1.5rem;">📢 Updates</h3>
+                {% if updates %}
+                    {% for update in updates %}
+                    <div style="padding: 1.5rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 1rem;">
+                        <h4 style="margin-bottom: 0.5rem;">{{ update.title }}</h4>
+                        <small style="color: var(--text-secondary);">{{ update.created_at.strftime('%B %d, %Y') }}</small>
+                        {% if update.image_url %}
+                        <img src="{{ update.image_url }}" alt="{{ update.title }}" style="width: 100%; margin-top: 1rem; border-radius: 8px;">
+                        {% endif %}
+                        <p style="margin-top: 1rem; white-space: pre-wrap;">{{ update.content }}</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="color: var(--text-secondary);">No updates yet.</p>
+                {% endif %}
+
+                {% if user and creator.id == user.id %}
+                <button class="btn btn-secondary" onclick="showUpdateModal()" style="margin-top: 1rem;">
+                    Post Update
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Comments -->
+            <div class="glass-strong" style="padding: 2rem;">
+                <h3 style="margin-bottom: 1.5rem;">💬 Comments ({{ comments|length }})</h3>
+
+                {% if user %}
+                <div style="margin-bottom: 2rem;">
+                    <textarea id="comment-text" class="form-textarea" placeholder="Leave a comment..."></textarea>
+                    <button class="btn btn-primary" onclick="postComment()" style="margin-top: 1rem;">
+                        Post Comment
+                    </button>
+                </div>
+                {% endif %}
+
+                <div id="comments-list">
+                    {% for comment in comments %}
+                    <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <a href="{{ url_for('profile', wallet_address=comment.user.wallet_address) }}" class="address-mono">{{ comment.user.display_address() }}</a>
+                            <small style="color: var(--text-secondary);">{{ comment.created_at.strftime('%B %d, %Y') }}</small>
+                        </div>
+                        <p style="white-space: pre-wrap;">{{ comment.content }}</p>
+                    </div>
+                    {% endfor %}
+
+                    {% if not comments %}
+                    <p style="color: var(--text-secondary);">No comments yet. Be the first to comment!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div>
+            <!-- Contribution Box -->
+            <div class="glass-strong" style="padding: 2rem; position: sticky; top: 100px;">
+                <!-- Progress -->
+                <div style="margin-bottom: 2rem;">
+                    <h2 style="font-size: 2.5rem; color: var(--text-primary);">{{ campaign.total_raised_pls|round(0) }} PLS</h2>
+                    <p style="color: var(--text-secondary);">raised of {{ campaign.goal_pls|round(0) }} PLS goal</p>
+
+                    <div class="progress-bar" style="margin: 1rem 0; height: 12px;">
+                        <div class="progress-fill" style="width: {{ campaign.progress_percentage() }}%"></div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 0.9rem;">
+                        <span>{{ "%.0f"|format(campaign.progress_percentage()) }}% funded</span>
+                        <span>{{ campaign.days_remaining() }} days left</span>
+                    </div>
+                </div>
+
+                <!-- Burn Stats -->
+                <div style="margin-bottom: 2rem; padding: 1rem; background: var(--gradient-fire); border-radius: 12px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 2rem;">🔥</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">{{ campaign.total_burned_pls|round(2) }} PLS</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">burned by this campaign</div>
+                    </div>
+                </div>
+
+                <!-- Contribute Form -->
+                {% if user %}
+                <div style="margin-bottom: 2rem;">
+                    <label class="form-label">Contribution Amount (PLS)</label>
+                    <input type="number" class="form-input" id="contribution-amount" placeholder="100" min="1" step="0.01">
+
+                    <div id="contribution-breakdown" style="margin: 1rem 0; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; font-size: 0.9rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>To campaign (99%):</span>
+                            <strong id="to-campaign">0 PLS</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Burned (1%):</span>
+                            <strong id="burned" class="fire-effect">0 PLS</strong>
+                        </div>
+                        <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color);">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>USD value:</span>
+                                <strong id="usd-value">${{ pls_price }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="contribute()" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+                        🚀 Contribute Now
+                    </button>
+                </div>
+                {% else %}
+                <button class="btn btn-primary" onclick="connectWallet()" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+                    Connect Wallet to Contribute
+                </button>
+                {% endif %}
+
+                <!-- Recent Contributions -->
+                <div style="margin-top: 2rem;">
+                    <h4 style="margin-bottom: 1rem;">Recent Contributors</h4>
+                    {% for contrib in contributions[:5] %}
+                    <div style="display: flex; justify-content: space-between; padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                        <a href="{{ url_for('profile', wallet_address=contrib.contributor.wallet_address) }}" class="address-mono">{{ contrib.contributor.display_address() }}</a>
+                        <strong>{{ contrib.amount_pls|round(2) }} PLS</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div id="success-modal" class="modal-overlay" style="display: none;">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title text-gradient-rainbow">Contribution Success! 🎉</h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div id="success-content"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const plsPrice = {{ pls_price }};
+    const campaignId = '{{ campaign.campaign_id }}';
+
+    // Update contribution breakdown
+    document.getElementById('contribution-amount')?.addEventListener('input', function() {
+        const amount = parseFloat(this.value) || 0;
+        const burned = amount * 0.01;
+        const toCampaign = amount * 0.99;
+        const usdValue = amount * plsPrice;
+
+        document.getElementById('to-campaign').textContent = toCampaign.toFixed(2) + ' PLS';
+        document.getElementById('burned').textContent = burned.toFixed(2) + ' PLS';
+        document.getElementById('usd-value').textContent = '$' + usdValue.toFixed(2);
+    });
+
+    function contribute() {
+        const amount = parseFloat(document.getElementById('contribution-amount').value);
+
+        if (!amount || amount <= 0) {
+            alert('Please enter a valid amount');
+            return;
+        }
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.textContent = '🔄 Processing...';
+
+        fetch('/api/contribute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                campaign_id: campaignId,
+                amount_pls: amount
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccessModal(data);
+                setTimeout(() => location.reload(), 3000);
+            } else {
+                alert('Error: ' + data.error);
+                btn.disabled = false;
+                btn.textContent = '🚀 Contribute Now';
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+            btn.disabled = false;
+            btn.textContent = '🚀 Contribute Now';
+        });
+    }
+
+    function showSuccessModal(data) {
+        let achievementsHtml = '';
+        if (data.new_achievements && data.new_achievements.length > 0) {
+            achievementsHtml = `
+                <div style="margin-top: 1rem; padding: 1rem; background: var(--gradient-purple-rain); border-radius: 8px;">
+                    <h4>New Achievements Unlocked!</h4>
+                    ${data.new_achievements.map(ach => `
+                        <div class="achievement-badge achievement-${ach.tier}" style="margin: 0.5rem;">
+                            ${ach.name}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        document.getElementById('success-content').innerHTML = `
+            <div style="text-align: center; padding: 2rem 0;">
+                <div style="font-size: 5rem; margin-bottom: 1rem;">🔥</div>
+                <h3 style="margin-bottom: 1rem;">Contribution Successful!</h3>
+                <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 1rem;">
+                    <div style="margin-bottom: 0.5rem;">To Campaign: <strong>${data.to_campaign_pls.toFixed(2)} PLS</strong></div>
+                    <div style="color: #ff6600;">Burned: <strong>${data.burned_pls.toFixed(2)} PLS 🔥</strong></div>
+                </div>
+                <div style="padding: 0.5rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 1rem; font-family: 'Courier New', monospace; font-size: 0.8rem; word-break: break-all;">
+                    ${data.transaction_hash}
+                </div>
+                ${achievementsHtml}
+            </div>
+        `;
+        document.getElementById('success-modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('success-modal').style.display = 'none';
+    }
+
+    function postComment() {
+        const content = document.getElementById('comment-text').value;
+        if (!content.trim()) {
+            alert('Please enter a comment');
+            return;
+        }
+
+        fetch('/api/post_comment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                campaign_id: campaignId,
+                content: content
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+</script>
+{% endblock %}

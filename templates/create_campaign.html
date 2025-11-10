@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Create Campaign - Fund.tires{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 3rem auto;">
+    <div class="glass-strong" style="padding: 3rem;">
+        <h1 class="text-gradient-rainbow" style="font-size: 2.5rem; margin-bottom: 0.5rem;">Create Your Campaign</h1>
+        <p style="color: var(--text-secondary); margin-bottom: 2rem;">Launch in 30 seconds on PulseChain network</p>
+
+        <form id="campaign-form">
+            <!-- Title -->
+            <div class="form-group">
+                <label class="form-label">Campaign Title *</label>
+                <input type="text" class="form-input" id="title" required placeholder="Help fund my project">
+            </div>
+
+            <!-- Category -->
+            <div class="form-group">
+                <label class="form-label">Category *</label>
+                <select class="form-select" id="category" required>
+                    <option value="personal">Personal (25 PLS fee)</option>
+                    <option value="business">Business (50 PLS fee)</option>
+                    <option value="charity">Charity (15 PLS fee - Discounted)</option>
+                    <option value="emergency">Emergency (10 PLS fee - Discounted)</option>
+                    <option value="creative">Creative (25 PLS fee)</option>
+                    <option value="education">Education (25 PLS fee)</option>
+                    <option value="medical">Medical (15 PLS fee)</option>
+                    <option value="community">Community (25 PLS fee)</option>
+                    <option value="technology">Technology (50 PLS fee)</option>
+                    <option value="environment">Environment (25 PLS fee)</option>
+                    <option value="animal">Animal (20 PLS fee)</option>
+                    <option value="other">Other (25 PLS fee)</option>
+                </select>
+            </div>
+
+            <!-- Description -->
+            <div class="form-group">
+                <label class="form-label">Campaign Story</label>
+                <textarea class="form-textarea" id="description" placeholder="Tell your story..."></textarea>
+            </div>
+
+            <!-- Funding Goal -->
+            <div class="form-group">
+                <label class="form-label">Funding Goal (USD) *</label>
+                <input type="number" class="form-input" id="goal_usd" required min="100" placeholder="10000">
+                <small style="color: var(--text-secondary);">Current PLS Price: ${{ "%.6f"|format(pls_price) }}</small>
+                <div id="goal-pls-display" style="margin-top: 0.5rem; color: var(--neon-glow); font-weight: 600;"></div>
+            </div>
+
+            <!-- Duration -->
+            <div class="form-group">
+                <label class="form-label">Duration (Days) *</label>
+                <input type="range" class="form-input" id="duration_days" min="7" max="90" value="30" style="height: 40px;">
+                <div id="duration-display" style="margin-top: 0.5rem; color: var(--text-primary); font-weight: 600;">30 days</div>
+            </div>
+
+            <!-- Milestones -->
+            <div class="form-group">
+                <label class="form-label">Number of Milestones *</label>
+                <input type="number" class="form-input" id="num_milestones" required min="1" max="20" value="4" placeholder="4">
+                <small style="color: var(--text-secondary);">Staged funding with creator deposits for investor safety</small>
+                <div id="milestone-info" style="margin-top: 0.5rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px;"></div>
+            </div>
+
+            <!-- Beneficiary Address -->
+            <div class="form-group">
+                <label class="form-label">Beneficiary Wallet Address</label>
+                <input type="text" class="form-input" id="beneficiary_address" placeholder="{{ user.wallet_address }}" value="{{ user.wallet_address }}">
+                <small style="color: var(--text-secondary);">Defaults to your connected wallet</small>
+            </div>
+
+            <!-- Image URL (Optional) -->
+            <div class="form-group">
+                <label class="form-label">Image URL (Optional)</label>
+                <input type="url" class="form-input" id="image_url" placeholder="https://...">
+            </div>
+
+            <!-- Video URL (Optional) -->
+            <div class="form-group">
+                <label class="form-label">Video URL (Optional)</label>
+                <input type="url" class="form-input" id="video_url" placeholder="https://youtube.com/...">
+            </div>
+
+            <!-- Fee Display -->
+            <div style="margin: 2rem 0; padding: 1.5rem; background: var(--gradient-deep-purple); border-radius: 12px;">
+                <h3 style="margin-bottom: 1rem;">💰 Campaign Costs</h3>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>Creation Fee (100% Burned):</span>
+                    <strong id="creation-fee-display">25 PLS</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>Required Creator Deposit:</span>
+                    <strong id="deposit-display">0 PLS</strong>
+                </div>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2);">
+                    <small style="color: var(--text-secondary);">
+                        Your deposit ensures investor safety. Released back to you as milestones are verified.
+                    </small>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1.25rem; font-size: 1.1rem;">
+                🚀 Launch Campaign in 30 Seconds
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div id="success-modal" class="modal-overlay" style="display: none;">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title text-gradient-rainbow">Campaign Created! 🎉</h2>
+            <button class="modal-close" onclick="closeSuccessModal()">&times;</button>
+        </div>
+        <div id="success-content"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const plsPrice = {{ pls_price }};
+    const creationFees = {{ creation_fees|tojson }};
+
+    // Update PLS goal display
+    document.getElementById('goal_usd').addEventListener('input', updateGoalDisplay);
+    document.getElementById('category').addEventListener('change', updateFeeDisplay);
+    document.getElementById('num_milestones').addEventListener('input', updateMilestoneInfo);
+
+    function updateGoalDisplay() {
+        const goalUsd = parseFloat(document.getElementById('goal_usd').value) || 0;
+        const goalPls = goalUsd / plsPrice;
+        document.getElementById('goal-pls-display').textContent = `≈ ${formatNumber(goalPls)} PLS`;
+        updateMilestoneInfo();
+    }
+
+    function updateFeeDisplay() {
+        const category = document.getElementById('category').value;
+        const fee = creationFees[category] || 25;
+        document.getElementById('creation-fee-display').textContent = `${fee} PLS`;
+        updateMilestoneInfo();
+    }
+
+    function updateMilestoneInfo() {
+        const goalUsd = parseFloat(document.getElementById('goal_usd').value) || 0;
+        const goalPls = goalUsd / plsPrice;
+        const numMilestones = parseInt(document.getElementById('num_milestones').value) || 1;
+
+        const amountPerMilestone = goalPls / numMilestones;
+        const depositPerStage = amountPerMilestone;
+        const totalDeposit = depositPerStage * numMilestones;
+
+        document.getElementById('deposit-display').textContent = `${formatNumber(totalDeposit)} PLS`;
+
+        document.getElementById('milestone-info').innerHTML = `
+            <div><strong>Staged Funding Safety:</strong></div>
+            <div style="margin-top: 0.5rem;">
+                • ${numMilestones} milestones of ${formatNumber(amountPerMilestone)} PLS each<br>
+                • You deposit ${formatNumber(depositPerStage)} PLS per milestone<br>
+                • Total deposit: ${formatNumber(totalDeposit)} PLS<br>
+                • Deposits returned as milestones are verified
+            </div>
+        `;
+    }
+
+    // Update duration display
+    document.getElementById('duration_days').addEventListener('input', function() {
+        document.getElementById('duration-display').textContent = this.value + ' days';
+    });
+
+    // Format number helper
+    function formatNumber(num) {
+        if (num >= 1000000) {
+            return (num / 1000000).toFixed(2) + 'M';
+        } else if (num >= 1000) {
+            return (num / 1000).toFixed(2) + 'K';
+        }
+        return num.toFixed(2);
+    }
+
+    // Initialize displays
+    updateGoalDisplay();
+    updateFeeDisplay();
+    updateMilestoneInfo();
+
+    // Form submission
+    document.getElementById('campaign-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = {
+            title: document.getElementById('title').value,
+            category: document.getElementById('category').value,
+            description: document.getElementById('description').value,
+            goal_usd: parseFloat(document.getElementById('goal_usd').value),
+            duration_days: parseInt(document.getElementById('duration_days').value),
+            num_milestones: parseInt(document.getElementById('num_milestones').value),
+            beneficiary_address: document.getElementById('beneficiary_address').value,
+            image_url: document.getElementById('image_url').value,
+            video_url: document.getElementById('video_url').value
+        };
+
+        // Disable submit button
+        const submitBtn = document.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = '🔄 Creating Campaign...';
+
+        fetch('/api/create_campaign', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccessModal(data);
+            } else {
+                alert('Error: ' + data.error);
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Launch Campaign in 30 Seconds';
+            }
+        })
+        .catch(error => {
+            alert('Error creating campaign: ' + error);
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🚀 Launch Campaign in 30 Seconds';
+        });
+    });
+
+    function showSuccessModal(data) {
+        document.getElementById('success-content').innerHTML = `
+            <div style="text-align: center; padding: 2rem 0;">
+                <div style="font-size: 5rem; margin-bottom: 1rem;">🔥</div>
+                <h3 style="margin-bottom: 1rem;">Campaign is Live!</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                    Your campaign was created and ${data.creation_fee_burned} PLS was burned
+                </p>
+                <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 1rem; font-family: 'Courier New', monospace; word-break: break-all;">
+                    ${data.transaction_hash}
+                </div>
+                <a href="/campaign/${data.campaign_id}" class="btn btn-primary" style="width: 100%; padding: 1rem; display: block; text-align: center; margin-top: 1rem;">
+                    View Your Campaign
+                </a>
+            </div>
+        `;
+        document.getElementById('success-modal').style.display = 'flex';
+    }
+
+    function closeSuccessModal() {
+        document.getElementById('success-modal').style.display = 'none';
+    }
+</script>
+{% endblock %}

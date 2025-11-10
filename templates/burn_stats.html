@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Burn Stats & Projections - Fund.tires{% endblock %}
+
+{% block content %}
+<div class="container" style="margin: 3rem auto;">
+    <h1 class="text-gradient-rainbow" style="font-size: 3rem; text-align: center; margin-bottom: 1rem;">Burn Statistics</h1>
+    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 3rem;">
+        Track the deflationary impact of Fund.tires on PLS supply
+    </p>
+
+    <!-- Total Burn Display -->
+    <div class="glass-strong" style="padding: 3rem; text-align: center; margin-bottom: 3rem; background: var(--gradient-fire);">
+        <div style="font-size: 5rem; margin-bottom: 1rem;">🔥</div>
+        <div style="font-size: 3rem; font-weight: 900; margin-bottom: 0.5rem;">{{ "%.2f"|format(total_burned) }} PLS</div>
+        <div style="font-size: 1.2rem; opacity: 0.9;">Total Burned Forever</div>
+        <div style="margin-top: 1rem; font-size: 1.1rem; opacity: 0.9;">
+            ≈ ${{ "%.2f"|format(total_burned * pls_price) }} USD at current price
+        </div>
+    </div>
+
+    <!-- Live PLS Price -->
+    <div class="glass-strong" style="padding: 2rem; margin-bottom: 3rem;">
+        <h2 style="margin-bottom: 1.5rem;">📈 Live PLS Price</h2>
+        <div style="display: flex; justify-content: space-around; text-align: center;">
+            <div>
+                <div style="font-size: 2.5rem; font-weight: 700; color: var(--neon-glow);">${{ "%.6f"|format(pls_price) }}</div>
+                <div style="color: var(--text-secondary);">Current Price</div>
+            </div>
+            <div>
+                <div style="font-size: 2.5rem; font-weight: 700; color: #00ff00;">+5.2%</div>
+                <div style="color: var(--text-secondary);">24h Change</div>
+            </div>
+            <div>
+                <div style="font-size: 2.5rem; font-weight: 700;">$1.2M</div>
+                <div style="color: var(--text-secondary);">24h Volume</div>
+            </div>
+        </div>
+        <div id="price-chart" style="margin-top: 2rem; height: 300px; background: var(--bg-secondary); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+            Price chart visualization (Chart.js integration)
+        </div>
+    </div>
+
+    <!-- Burn History -->
+    <div class="glass-strong" style="padding: 2rem; margin-bottom: 3rem;">
+        <h2 style="margin-bottom: 1.5rem;">📊 Burn History (Last 30 Days)</h2>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary);">
+                        <th style="padding: 1rem; text-align: left;">Date</th>
+                        <th style="padding: 1rem; text-align: right;">Creation Burns</th>
+                        <th style="padding: 1rem; text-align: right;">Contribution Burns</th>
+                        <th style="padding: 1rem; text-align: right;">Total Burned</th>
+                        <th style="padding: 1rem; text-align: right;">Campaigns</th>
+                        <th style="padding: 1rem; text-align: right;">Contributions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in burn_stats %}
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 1rem;">{{ stat.date.strftime('%b %d, %Y') }}</td>
+                        <td style="padding: 1rem; text-align: right;">{{ "%.2f"|format(stat.daily_creation_burn) }} PLS</td>
+                        <td style="padding: 1rem; text-align: right;">{{ "%.2f"|format(stat.daily_contribution_burn) }} PLS</td>
+                        <td style="padding: 1rem; text-align: right;"><strong style="color: #ff6600;">{{ "%.2f"|format(stat.daily_total_burn) }} PLS 🔥</strong></td>
+                        <td style="padding: 1rem; text-align: right;">{{ stat.campaigns_created }}</td>
+                        <td style="padding: 1rem; text-align: right;">{{ stat.contributions_made }}</td>
+                    </tr>
+                    {% endfor %}
+
+                    {% if not burn_stats %}
+                    <tr>
+                        <td colspan="6" style="padding: 2rem; text-align: center; color: var(--text-secondary);">
+                            No burn data yet
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Burn Projection Calculator -->
+    <div class="glass-strong" style="padding: 2rem;">
+        <h2 style="margin-bottom: 1.5rem;">🔮 Burn Projection Calculator</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+            Calculate projected PLS burns based on platform activity
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="form-group">
+                <label class="form-label">Daily Contribution Volume (PLS)</label>
+                <input type="number" class="form-input" id="daily_volume" value="10000" min="0" step="100">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Campaigns Created Per Day</label>
+                <input type="number" class="form-input" id="campaigns_per_day" value="50" min="0" step="1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Average Creation Fee (PLS)</label>
+                <input type="number" class="form-input" id="avg_creation_fee" value="25" min="10" max="50" step="5">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Projection Period (Days)</label>
+                <input type="number" class="form-input" id="projection_days" value="365" min="1" max="3650" step="1">
+            </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="calculateBurnProjections()" style="width: 100%; padding: 1rem; margin-bottom: 2rem;">
+            Calculate Projections
+        </button>
+
+        <div id="projection-results" style="display: none;">
+            <div style="padding: 2rem; background: var(--gradient-deep-purple); border-radius: 12px; margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1.5rem; text-align: center;">Projected Burns</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Daily</div>
+                        <div style="font-size: 1.8rem; font-weight: 700;" id="proj-daily">0 PLS</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);" id="proj-daily-usd">$0</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Weekly</div>
+                        <div style="font-size: 1.8rem; font-weight: 700;" id="proj-weekly">0 PLS</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);" id="proj-weekly-usd">$0</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Monthly</div>
+                        <div style="font-size: 1.8rem; font-weight: 700;" id="proj-monthly">0 PLS</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);" id="proj-monthly-usd">$0</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Yearly</div>
+                        <div style="font-size: 1.8rem; font-weight: 700;" id="proj-yearly">0 PLS</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);" id="proj-yearly-usd">$0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="padding: 1.5rem; background: var(--bg-secondary); border-radius: 12px;">
+                <h4 style="margin-bottom: 1rem;">Breakdown</h4>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>Daily Contribution Burns (1%):</span>
+                    <strong id="breakdown-contrib">0 PLS</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>Daily Creation Fee Burns:</span>
+                    <strong id="breakdown-creation">0 PLS</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding-top: 0.5rem; border-top: 1px solid var(--border-color);">
+                    <span><strong>Total Daily Burn:</strong></span>
+                    <strong style="color: #ff6600;" id="breakdown-total">0 PLS 🔥</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function formatNumber(num) {
+        if (num >= 1000000) {
+            return (num / 1000000).toFixed(2) + 'M';
+        } else if (num >= 1000) {
+            return (num / 1000).toFixed(2) + 'K';
+        }
+        return num.toFixed(2);
+    }
+
+    function calculateBurnProjections() {
+        const dailyVolume = parseFloat(document.getElementById('daily_volume').value) || 0;
+        const campaignsPerDay = parseFloat(document.getElementById('campaigns_per_day').value) || 0;
+        const avgCreationFee = parseFloat(document.getElementById('avg_creation_fee').value) || 25;
+        const projectionDays = parseFloat(document.getElementById('projection_days').value) || 365;
+
+        fetch('/api/burn_projections', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                daily_volume_pls: dailyVolume,
+                campaigns_per_day: campaignsPerDay,
+                avg_creation_fee: avgCreationFee,
+                projection_days: projectionDays
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update projections
+                document.getElementById('proj-daily').textContent = formatNumber(data.projections_pls.daily) + ' PLS';
+                document.getElementById('proj-daily-usd').textContent = '$' + formatNumber(data.projections_usd.daily);
+
+                document.getElementById('proj-weekly').textContent = formatNumber(data.projections_pls.weekly) + ' PLS';
+                document.getElementById('proj-weekly-usd').textContent = '$' + formatNumber(data.projections_usd.weekly);
+
+                document.getElementById('proj-monthly').textContent = formatNumber(data.projections_pls.monthly) + ' PLS';
+                document.getElementById('proj-monthly-usd').textContent = '$' + formatNumber(data.projections_usd.monthly);
+
+                document.getElementById('proj-yearly').textContent = formatNumber(data.projections_pls.yearly) + ' PLS';
+                document.getElementById('proj-yearly-usd').textContent = '$' + formatNumber(data.projections_usd.yearly);
+
+                // Update breakdown
+                document.getElementById('breakdown-contrib').textContent = formatNumber(data.daily_contribution_burn) + ' PLS';
+                document.getElementById('breakdown-creation').textContent = formatNumber(data.daily_creation_burn) + ' PLS';
+                document.getElementById('breakdown-total').textContent = formatNumber(data.daily_total_burn) + ' PLS 🔥';
+
+                // Show results
+                document.getElementById('projection-results').style.display = 'block';
+            }
+        })
+        .catch(error => {
+            alert('Error calculating projections: ' + error);
+        });
+    }
+
+    // Calculate on page load with default values
+    calculateBurnProjections();
+</script>
+{% endblock %}

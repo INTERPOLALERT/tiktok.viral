@@ -10,10 +10,18 @@ from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
 import cv2
 import numpy as np
-from moviepy.editor import (
-    VideoFileClip, ImageClip, concatenate_videoclips,
-    CompositeVideoClip, TextClip, AudioFileClip, ColorClip
-)
+# MoviePy 2.x imports
+try:
+    from moviepy.video.io.VideoFileClip import VideoFileClip
+    from moviepy.video.VideoClip import ImageClip, TextClip, ColorClip
+    from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip, concatenate_videoclips
+    from moviepy.audio.io.AudioFileClip import AudioFileClip
+except ImportError:
+    # Fallback to moviepy 1.x imports
+    from moviepy.editor import (
+        VideoFileClip, ImageClip, concatenate_videoclips,
+        CompositeVideoClip, TextClip, AudioFileClip, ColorClip
+    )
 from PIL import Image
 import json
 

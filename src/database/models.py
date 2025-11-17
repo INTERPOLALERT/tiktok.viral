@@ -26,7 +26,7 @@ class Project(Base):
     status = Column(String(50), default='active')  # active, archived, completed
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    metadata = Column(JSON)
+    meta_data = Column(JSON)
 
     # Relationships
     videos = relationship("Video", back_populates="project", cascade="all, delete-orphan")
@@ -52,7 +52,7 @@ class Video(Base):
     ai_generated = Column(Boolean, default=False)
     ai_prompt = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
-    metadata = Column(JSON)
+    meta_data = Column(JSON)
 
     project = relationship("Project", back_populates="videos")
 
@@ -72,7 +72,7 @@ class Image(Base):
     ai_generated = Column(Boolean, default=False)
     ai_prompt = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
-    metadata = Column(JSON)
+    meta_data = Column(JSON)
 
     project = relationship("Project", back_populates="images")
 
@@ -92,7 +92,7 @@ class Script(Base):
     seo_score = Column(Float)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    metadata = Column(JSON)
+    meta_data = Column(JSON)
 
     project = relationship("Project", back_populates="scripts")
 
@@ -113,7 +113,7 @@ class AudioFile(Base):
     ai_generated = Column(Boolean, default=False)
     voice_model = Column(String(100))
     created_at = Column(DateTime, default=datetime.utcnow)
-    metadata = Column(JSON)
+    meta_data = Column(JSON)
 
     project = relationship("Project", back_populates="audio_files")
 
@@ -133,7 +133,7 @@ class SocialMediaPost(Base):
     engagement = Column(JSON)  # likes, comments, shares, views
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    metadata = Column(JSON)
+    meta_data = Column(JSON)
 
 
 class Analytics(Base):
@@ -146,7 +146,7 @@ class Analytics(Base):
     metric_type = Column(String(50))  # views, likes, shares, comments, etc.
     value = Column(Float)
     recorded_at = Column(DateTime, default=datetime.utcnow)
-    metadata = Column(JSON)
+    meta_data = Column(JSON)
 
 
 class Trend(Base):
@@ -160,7 +160,7 @@ class Trend(Base):
     score = Column(Float)
     category = Column(String(100))
     detected_at = Column(DateTime, default=datetime.utcnow)
-    metadata = Column(JSON)
+    meta_data = Column(JSON)
 
 
 class Template(Base):
@@ -175,7 +175,7 @@ class Template(Base):
     usage_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    metadata = Column(JSON)
+    meta_data = Column(JSON)
 
 
 class APIKey(Base):
